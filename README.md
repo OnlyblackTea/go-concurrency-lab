@@ -10,13 +10,6 @@
 > [`docs/设计规格.md`](docs/设计规格.md)，落地清单见
 > [`docs/骨架落地清单.md`](docs/骨架落地清单.md)。
 
-> [!WARNING]
-> **本规格尚未按题库侧的 `_SCALE.md` 复核规模。** 现有 stage 的改动面普遍只有 1~2 个文件、
-> canonical 只有 3~4 条，低于现行下限（改动面 **≥3 文件**、canonical **≥5 条**且红 ≥2 条不同不变量、
-> 含边界/拒绝路径）。**开工前必须先复核并扩编**（同 stage 扩面，或与相邻 stage 合并），
-> 并把结果写回规格与 ticket 卡。参考已复核的两份：`mq-lab`（6 stage 全部扩面）
-> 与 `concurrency-lab`（Stage 1 / Stage 2）。
-
 
 ## 这是什么
 
@@ -28,10 +21,10 @@
 | 语言栈 | Go 1.22+（钉到具体补丁版）· `go build` / `go vet` · `go test` + `go test -race` · **只用标准库（零第三方依赖）** |
 | 基础设施 | **无外部依赖，纯进程内**：不开端口、不起容器、不联网。唯一的宿主前置是 Go 工具链与一个可用的 C 编译器（`-race` 要 cgo）；可选档位用钉死摘要的 `golang:1.22.x` 镜像把工具链也变成可复现项 |
 | stage 数 | 6 个（另有 1 个 board-only 的 `stage-00-onboarding`，不出 ticket、无分支） |
-| 每 stage 规模 | （见规格） |
+| 每 stage 规模 | 按 [`_SCALE.md`](./_SCALE.md) 的下限复核后（本轮「v1.1 规模复核」，见 §1 开头）：**逐 stage 改动面 ≥ 3 个文件且三类角色齐 · canonical 6~7 条（红 3 · 单线程基线 2~4 · 边界/拒绝 1）· 被破坏的不变量 3 个（= 红用例数，互不相同）· 考点族 ≥ 2 个**。全 Track 合计改动面 **9 → 19 个文件位置**（v1.1 新增 10 处：`quota/issuer.go`、`quota/ledger.go`、`dispatch/fanout.go`、`dispatch/closeguard.go`、`dispatch/tally.go`、`limit/accounting.go`、`sched/pool.go`、`sched/stats.go`、`pool/manager.go`、`pool/gate.go`；另有 1 处**判定入口**改造：`scripts/gate-exit.sh` + `smoke/gate_exit_test.go`，见 §6），canonical **18 → 37 条**（**红 18 · 单线程基线 13 · 边界/拒绝 6**）。**6 个 stage 全部「同 stage 扩面」、零合并**，理由见 §1 的 v1.1 块 |
 | 依赖前置 | `go: "1.22"`、`build: go`、`race: "cgo + C 编译器（Windows 上需 gcc）"`、`cpu: "2"`、`mem: "2GiB"`、`docker: "24"`（仅容器档位需要，不装不影响任何 stage） |
 | 与 database-bagu 的关系 | **互补而非续写**。它是 Java 17 + Maven + MySQL + Redis 的「重资产栈」，本 Track 是零基础设施的第二种语言栈：seckill 要起两个容器才开始做题，这条 Track 的冷启动是 0。考点也不重叠——JVM 侧的 JMM / `synchronized` / 线程池 / 异步编排归 `concurrency-lab`（同为 Java），Go 侧的 channel/select 通信模型、GMP 调度、context 取消传播、race detector 归本条。两边共享的「临界区与可见性」在两个语言里是**不同机制**，正好互为对照 |
-| 预计落地工作量 | 骨架（6 条 lane + 组合根 + 工具链脚手架）6~8 人日 / canonical 测试与 `testkit`（判据的真正难点）5~7 人日 / 题面·判据·八股地图 6 张 4~6 人日 / 分支链 + digest pin + 实测证据报告 2~3 人日 |
+| 预计落地工作量 | 骨架（6 条 lane + **10 处 v1.1 新增的状态 / 并发语义载体 / 编排边界** + 组合根 + 工具链脚手架）**10~13 人日** / canonical 测试与 `testkit`（判据的真正难点）**8~10 人日** / 题面·判据·八股地图 6 张 **6~8 人日** / 分支链 + digest pin + 实测证据报告 **3~4 人日**，**合计 27~35 人日**（旧口径 17~24 人日，已按 §7 的 v1.1 重新估算块上修） |
 
 ## stage 一览
 
